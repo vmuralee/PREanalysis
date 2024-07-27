@@ -178,7 +178,7 @@ void TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     trkDzError1[nTracks] = track.dzError();
     trkPtError[nTracks] = track.ptError();
     trkChi2[nTracks] = track.normalizedChi2();
-
+    trkNdof[nTracks] = track.ndof();
     trkAlgo[nTracks] = track.algo();
     trkNHit[nTracks] = track.numberOfValidHits();
     trkNlayer[nTracks] = track.hitPattern().trackerLayersWithMeasurement();

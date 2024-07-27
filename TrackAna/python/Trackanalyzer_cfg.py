@@ -19,7 +19,8 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:/eos/home-v/vmuralee/PREanalysis/raw/Muon_outputPhysicsHIPhysicsRawRECOPrime0.root'
+        'file:/eos/home-v/vmuralee/PREanalysis/raw/Muon_outputPhysicsHIPhysicsRawRECOPrime0.root' # File for Tracks from SiStripCluster
+        #'file:/eos/home-v/vmuralee/PREanalysis/raw/step2_dump_Rawprime.root'  # File for Tracks from ApproxSiStripCluster
     )
 )
 
