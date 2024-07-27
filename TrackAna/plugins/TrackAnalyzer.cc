@@ -140,7 +140,7 @@ void TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 
   runN = iEvent.id().run();
   eventN = iEvent.id().event();
-  //lumi = iEvent.id().lumi();
+  lumi = iEvent.id().luminosityBlock();
   const auto& tracksHandle = iEvent.getHandle(tracksToken_);
 
   
