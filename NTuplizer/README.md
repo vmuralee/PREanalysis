@@ -18,10 +18,3 @@ hltGetConfiguration /users/vmuralee/PREmenu/V9 \
 > prehlt.py
 ```
 
-
-## FED studies
-To study the event size for each detector FED contributions are follow.
-
-```
-cmsRun python/Trackanalyzer_cfg.py 
-```
