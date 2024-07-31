@@ -1,0 +1,11 @@
+<use name="DataFormats/TrackReco"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/ParameterSet"/>
+<use name="FWCore/PluginManager"/>
+<use name="CommonTools/UtilAlgos"/>
+<use name="FWCore/ServiceRegistry"/>
+<use name="CommonTools/Utils"/>
+<use name="RecoLocalTracker/SiStripClusterizer"/>
+<use name="SimTracker/TrackerHitAssociation"/>
+<use name="CalibTracker/SiStripCommon"/>
+<flags EDM_PLUGIN="1"/>

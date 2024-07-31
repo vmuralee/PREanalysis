@@ -396,7 +396,7 @@ process.hltPreDatasetHIPhysicsRawPrime = cms.EDFilter( "HLTPrescaler",
 )
 
 process.hltOutputPhysicsHIPhysicsRawPrime0 = cms.OutputModule( "PoolOutputModule",
-    fileName = cms.untracked.string( "/eos/home-v/vmuralee/PREanalysis/outputFiles/Muon_outputPhysicsHIPhysicsRawPrime0.root" ),
+    fileName = cms.untracked.string( "/gpfs/ddn/cms/user/muraleed/PREana/outputFiles/Muon_outputPhysicsHIPhysicsRawPrime0.root" ),
     compressionAlgorithm = cms.untracked.string( "ZSTD" ),
     compressionLevel = cms.untracked.int32( 3 ),
     fastCloning = cms.untracked.bool( False ),
