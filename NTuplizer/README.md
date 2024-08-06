@@ -19,24 +19,15 @@ hltGetConfiguration /users/vmuralee/PREmenu/V9 \
 ```
 
 ## Re-run RECO:Tracks
-Follow the cmsDriver commands
+Follow the cmsDriver commands for Raw' dataset
 ```
-cmsDriver.py  step3 --scenario pp --conditions 140X_dataRun3_Prompt_v3 -s REPACK:DigiToApproxClusterRaw --datatier RECO --eventcontent FEVTDEBUGHLT --era Run2_2018_pp_on_AA -n 10 --procModifiers approxSiStripClusters --customise_commands process.hltSiStripRawToDigi.ProductLabel='rawDataCollector';process.hltScalersRawToDigi.scalersInputTag='rawDataCollector' --process REHLT --filein /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root
+cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands process.rawPrimeDataRepacker.src='rawDataRepacker' --repacked --process ReHLT --filein file:/gpfs/ddn/cms/user/muraleed/PREana/rawprime/Muon_outputPhysicsRawPrimeFull.root
 ```
 rereco
 ```
-cmsDriver.py step4 -s RAW2DIGI,L1Reco,RECO --conditions auto:phase1_2022_realistic_hi -n 10 --datatier RECO --eventcontent RECO --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:step3_REPACK.root --hltProcess REHLT --process reRECO
+cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:/gpfs/ddn/cms/user/muraleed/PREana/outputFiles/step2_REPACK.root
 ```
-change the output commands inside the config file
-
+Finally the RAW dataset also re-run the reco::Tracks
 ```
-outputCommands = cms.untracked.vstring( 'drop *',
-                                            'keep *_*siStripClusters*_*_*',
-                                            'keep *_*generalTracks*_*_*',
-      'keep *_hltSiStripClusters2ApproxClusters_*_*',
-      'keep DetIds_hltSiStripRawToDigi_*_*',
-      'keep FEDRawDataCollection_rawPrimeDataRepacker_*_*',
-      'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_*',
-      'keep edmTriggerResults_*_*_*',
-      'keep triggerTriggerEvent_*_*_*' ),
+cmsDriver.py step5 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb --nThreads 254 --filein /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root
 ```
