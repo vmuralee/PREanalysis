@@ -6,8 +6,11 @@ cmsrel CMSSW_14_0_11
 cd CMSSW_14_0_11/src
 cmsenv
 
-```
+git cms-merge-topic vmuralee:myDev
+scram b -j 32
 
+```
+The approximated SiStripCluster has the compressed barycenter scaled to 8 bit value maximum. 
 ## Re-run HLT menu for ApproxSiStripCluster
 creating config file for Re-run hlt menu.
 ```
@@ -17,13 +20,28 @@ hltGetConfiguration /users/vmuralee/PREmenu/V9 \
 --input /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root \
 > prehlt.py
 ```
+The `--globaltag 140X_dataRun3_Prompt_v3` is used for offline cluster and track matching. To store only the important output modules,
 
+```
+outputCommands = cms.untracked.vstring('drop *',
+      'keep *_*siStripClusters*_*_*',
+      'keep *_*generalTracks*_*_*',
+      'keep *_hltSiStripClusters2ApproxClusters_*_*',
+      'keep DetIds_hltSiStripRawToDigi_*_HLTX',
+      'keep FEDRawDataCollection_raw*_*_HLTX',
+      'keep FEDRawDataCollection_hltSiStripDigiToZSRaw_*_HLTX',
+      'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_HLTX',
+      'keep edmTriggerResults_*_*_HLTX',
+      'keep triggerTriggerEvent_*_*_HLTX')
+
+```
+The Reruning HLT by `cmsRun prehlt.py`.
 ## Re-run RECO:Tracks
 Follow the cmsDriver commands for Raw' dataset
 ```
 cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands "process.rawPrimeDataRepacker.src='rawDataRepacker'" --repacked --process ReHLT --filein file:/gpfs/ddn/cms/user/muraleed/PREana/rawprime/Muon_outputPhysicsRawPrimeUint16check_t.root
 ```
-The jets get empty in `--era Run3_pp_on_PbPb_approxSiStripClusters` but not in the `--era Run3`
+The jets get empty in `--era Run3_pp_on_PbPb_approxSiStripClusters` but not in the `--era Run3`. 
 rereco
 ```
 cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:/gpfs/ddn/cms/user/muraleed/PREana/outputFiles/step2_REPACK.root
