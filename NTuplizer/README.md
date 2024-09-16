@@ -68,7 +68,7 @@ And change the outputCommands for the step3 configurateion by,
 change the era condition in `step3_RAW2DIGI_L1Reco_RECO.py` ,as 
 
 ```
-from Configuration.Eras.Era_Run2024_pp_on_PbPb import Run3_pp_on_PbPb_approxSiStripClusters_2024
+from Configuration.Eras.Era_Run2024_pp_on_PbPb_approxSiStripCluster import Run3_pp_on_PbPb_approxSiStripClusters_2024
 process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters_2024)
 ```
 and reRun RECO.
