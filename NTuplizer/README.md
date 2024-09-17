@@ -15,12 +15,12 @@ The approximated SiStripCluster has the compressed barycenter scaled to 8 bit va
 creating config file for Re-run hlt menu.
 ```
 hltGetConfiguration /users/vmuralee/PREmenu/V9 \
---globaltag 140X_dataRun3_HLT_for2024TSGStudies_v1 \
+--globaltag 140X_dataRun3_Prompt_v3\
 --data --unprescale --max-events 100 --eras Run3 \
 --input /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root \
 > prehlt.py
 ```
-The `--globaltag 140X_dataRun3_Prompt_v3` is used for offline cluster and track matching. To store only the important output modules,
+change the output commands as,
 
 ```
 outputCommands = cms.untracked.vstring('drop *',
