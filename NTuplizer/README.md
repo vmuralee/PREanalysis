@@ -2,11 +2,12 @@
 ## instaliing CMSSW
 
 ```
-cmsrel CMSSW_14_0_11
-cd CMSSW_14_0_11/src
+cmsrel CMSSW_14_1_0_pre6
+cd CMSSW_14_1_0_pre6/src/
 cmsenv
-
-git cms-merge-topic vmuralee:myDev
+git cms-init
+git pull git@github.com:vmuralee/cmssw.git myDev
+git cms-addpkg Configuration/Eras DataFormats/SiStripCluster
 scram b -j 32
 
 ```
