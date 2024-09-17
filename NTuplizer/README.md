@@ -41,20 +41,26 @@ Follow the cmsDriver commands for Raw' dataset
 ```
 cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands "process.rawPrimeDataRepacker.src='rawDataRepacker'" --repacked --process ReHLT --filein file:/gpfs/ddn/cms/user/muraleed/PREana/rawprime/Muon_outputPhysicsRawPrimeUint16check_t.root --no_exec 
 ```
-change the era condition in `step2_REPACK.py` ,as 
+command out the following lines in `step2_REPACK.py`,
+```
+from Configuration.Eras.Era_Run3_pp_on_PbPb_approxSiStripClusters_cff import Run3_pp_on_PbPb_approxSiStripClusters
+process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters)
+```
+and include the era condition, as 
 
 ```
 from Configuration.Eras.Era_Run2024_pp_on_PbPb_approxSiStripCluster import Run3_pp_on_PbPb_approxSiStripClusters_2024
 process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters_2024)
 ```
-and reRun HLT.
-rereco
+and proceed with `cmsRun step2_REPACK.py`. The output is used for reconstrucion. 
 ```
 cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:/gpfs/ddn/cms/user/muraleed/PREana/outputFiles/step2_REPACK.root
 ```
 And change the outputCommands for the step3 configurateion by,
 ```
 'drop *',
+'keep *_ak4PFJets_*_*',
+'keep *_*pfMet*_*_*',
 'keep *_*siStripClusters*_*_*',
 'keep *_*generalTracks*_*_*',
 'keep *_hltSiStripClusters2ApproxClusters_*_*',
@@ -65,13 +71,18 @@ And change the outputCommands for the step3 configurateion by,
 'keep edmTriggerResults_*_*_ReHLT',
 'keep triggerTriggerEvent_*_*_ReHLT'
 ```
-change the era condition in `step3_RAW2DIGI_L1Reco_RECO.py` ,as 
+command out the following lines in `step3_RAW2DIGI_L1Reco_RECO.py`,
+```
+from Configuration.Eras.Era_Run3_pp_on_PbPb_approxSiStripClusters_cff import Run3_pp_on_PbPb_approxSiStripClusters
+process = cms.Process('reRECO',Run3_pp_on_PbPb_approxSiStripClusters)
+```
+and include the era condition, as 
 
 ```
 from Configuration.Eras.Era_Run2024_pp_on_PbPb_approxSiStripCluster import Run3_pp_on_PbPb_approxSiStripClusters_2024
-process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters_2024)
+process = cms.Process('reRECO',Run3_pp_on_PbPb_approxSiStripClusters_2024)
 ```
-and reRun RECO.
+After, running `step3_RAW2DIGI_L1Reco_RECO.py` file will produced reconstructed tracks,jets and met. 
 Finally the RAW dataset also re-run the reco::Tracks
 ```
 cmsDriver.py step5 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3 --nThreads 254 --filein /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root
