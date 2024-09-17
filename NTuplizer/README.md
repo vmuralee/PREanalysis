@@ -8,12 +8,14 @@ cmsenv
 git cms-init
 git pull git@github.com:vmuralee/cmssw.git myDev
 git cms-addpkg Configuration/Eras DataFormats/SiStripCluster
+git clone https://github.com/vmuralee/PREanalysis.git
 scram b -j 32
 
 ```
 The approximated SiStripCluster has the compressed barycenter scaled to 8 bit value maximum. 
 ## Re-run HLT menu for ApproxSiStripCluster
-creating config file for Re-run hlt menu.
+Go to `cd PREanalysis/NTuplizer` directory and creating the config file for Re-run hlt menu.
+
 ```
 hltGetConfiguration /users/vmuralee/PREmenu/V9 \
 --globaltag 140X_dataRun3_Prompt_v3\
