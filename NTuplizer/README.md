@@ -42,7 +42,7 @@ Or simply Rerun existing `prehlt.py` file.
 ## Re-run the reco step in RAW' dataset
 Follow the cmsDriver commands for Raw' dataset
 ```
-cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands "process.rawPrimeDataRepacker.src='rawDataRepacker'" --repacked --process ReHLT --filein file:/gpfs/ddn/cms/user/muraleed/PREana/rawprime/Muon_outputPhysicsRawPrimeUint16check_t.root --no_exec 
+cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands "process.rawPrimeDataRepacker.src='rawDataRepacker'" --repacked --process ReHLT --filein file:Muon_outputPhysicsHIPhysicsRawPrime0.root --no_exec 
 ```
 command out the following lines in `step2_REPACK.py`,
 ```
@@ -57,7 +57,7 @@ process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters_2024)
 ```
 and proceed with `cmsRun step2_REPACK.py`. The output file is used for reRECO process. 
 ```
-cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:/gpfs/ddn/cms/user/muraleed/PREana/outputFiles/step2_REPACK.root
+cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:step2_REPACK.root --no_exec 
 ```
 And change the outputCommands for the step3 configurateion by,
 ```
