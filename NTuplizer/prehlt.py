@@ -405,15 +405,16 @@ process.hltOutputPhysicsHIPhysicsRawPrime0 = cms.OutputModule( "PoolOutputModule
         dataTier = cms.untracked.string( "RAW" )
     ),
     SelectEvents = cms.untracked.PSet(  SelectEvents = cms.vstring( 'Dataset_HIPhysicsRawPrime' ) ),
-    outputCommands = cms.untracked.vstring( 'drop *',
-                                            'keep *_*siStripClusters*_*_*',
-                                            'keep *_*generalTracks*_*_*',
+    outputCommands = cms.untracked.vstring('drop *',
+      'keep *_*siStripClusters*_*_*',
+      'keep *_*generalTracks*_*_*',
       'keep *_hltSiStripClusters2ApproxClusters_*_*',
-      'keep DetIds_hltSiStripRawToDigi_*_*',
-      'keep FEDRawDataCollection_rawPrimeDataRepacker_*_*',
-      'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_*',
-      'keep edmTriggerResults_*_*_*',
-      'keep triggerTriggerEvent_*_*_*' )
+      'keep DetIds_hltSiStripRawToDigi_*_HLTX',
+      'keep FEDRawDataCollection_raw*_*_HLTX',
+      'keep FEDRawDataCollection_hltSiStripDigiToZSRaw_*_HLTX',
+      'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_HLTX',
+      'keep edmTriggerResults_*_*_HLTX',
+      'keep triggerTriggerEvent_*_*_HLTX'),
 )
 
 process.HLTBeamSpot = cms.Sequence( process.hltOnlineBeamSpot + process.hltOnlineMetaDigis )
@@ -487,7 +488,7 @@ _customInfo['inputFiles']={}
 _customInfo['inputFiles'][True]  = "file:RelVal_Raw_GRun_DATA.root"
 _customInfo['inputFiles'][False] = "file:RelVal_Raw_GRun_MC.root"
 _customInfo['maxEvents' ]=  100
-_customInfo['globalTag' ]= "140X_dataRun3_HLT_for2024TSGStudies_v1"
+_customInfo['globalTag' ]= "140X_dataRun3_Prompt_v3"
 _customInfo['inputFile' ]=['/store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root']
 #['file:/afs/cern.ch/user/c/chenzh/public/forRawPrime/HITrackerNZS/HLT_output_RunOnRawStreamer_ZSon_TrackerNZS.root']
 ##['/store/data/Run2024F/EphemeralHLTPhysics1/RAW/v1/000/382/250/00000/005365a4-1194-48b8-a3c3-8da53a6a5dd5.root']
