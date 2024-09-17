@@ -36,7 +36,7 @@ outputCommands = cms.untracked.vstring('drop *',
 
 ```
 The Reruning HLT by `cmsRun prehlt.py`.
-## Re-run RECO:Tracks 
+## Re-run the reco step in RAW' dataset
 Follow the cmsDriver commands for Raw' dataset
 ```
 cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands "process.rawPrimeDataRepacker.src='rawDataRepacker'" --repacked --process ReHLT --filein file:/gpfs/ddn/cms/user/muraleed/PREana/rawprime/Muon_outputPhysicsRawPrimeUint16check_t.root --no_exec 
