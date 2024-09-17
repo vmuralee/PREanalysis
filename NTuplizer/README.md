@@ -59,7 +59,7 @@ and proceed with `cmsRun step2_REPACK.py`. The output file is used for reRECO pr
 ```
 cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:step2_REPACK.root --no_exec 
 ```
-And change the outputCommands for the step3 configurateion by,
+And change the outputCommands for the step3 configurateion `step3_RAW2DIGI_L1Reco_RECO.py`  by,
 ```
 'drop *',
 'keep *_ak4PFJets_*_*',
