@@ -8,7 +8,7 @@ cmsenv
 git cms-init
 git pull git@github.com:vmuralee/cmssw.git myDev
 git cms-addpkg Configuration/Eras DataFormats/SiStripCluster
-git clone https://github.com/vmuralee/PREanalysis.git
+git clone https://github.com/vmuralee/PREanalysis.git -b instructions
 scram b -j 32
 
 ```
@@ -38,7 +38,7 @@ outputCommands = cms.untracked.vstring('drop *',
       'keep triggerTriggerEvent_*_*_HLTX')
 
 ```
-The Reruning HLT by `cmsRun prehlt.py`.
+Or simply Rerun existing `prehlt.py` file.
 ## Re-run the reco step in RAW' dataset
 Follow the cmsDriver commands for Raw' dataset
 ```
