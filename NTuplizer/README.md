@@ -23,16 +23,14 @@ hltGetConfiguration /users/vmuralee/PREmenu/V9 \
 --input /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root \
 > prehlt.py
 ```
+Remove old `RECO` objects by `process.source.inputCommands = cms.untracked.vstring('drop *_*_*_RECO', 'keep FEDRawDataCollection_*_*_*')`
 change the output commands as,
 
 ```
 outputCommands = cms.untracked.vstring('drop *',
-      'keep *_*siStripClusters*_*_*',
-      'keep *_*generalTracks*_*_*',
       'keep *_hltSiStripClusters2ApproxClusters_*_*',
       'keep DetIds_hltSiStripRawToDigi_*_HLTX',
-      'keep FEDRawDataCollection_raw*_*_HLTX',
-      'keep FEDRawDataCollection_hltSiStripDigiToZSRaw_*_HLTX',
+      'keep FEDRawDataCollection_rawPrime*_*_HLTX',
       'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_HLTX',
       'keep edmTriggerResults_*_*_HLTX',
       'keep triggerTriggerEvent_*_*_HLTX')
@@ -40,24 +38,9 @@ outputCommands = cms.untracked.vstring('drop *',
 ```
 Or simply Rerun existing `prehlt.py` file.
 ## Re-run the reco step in RAW' dataset
-Follow the cmsDriver commands for Raw' dataset
+Rerun the reco step from the output of `prehlt.py`
 ```
-cmsDriver.py step2 --scenario pp --conditions auto:run3_data_prompt -s REPACK:DigiToApproxClusterRaw --datatier GEN-SIM-DIGI-RAW-HLTDEBUG --era Run3_pp_on_PbPb_approxSiStripClusters --eventcontent REPACKRAW -n 100 --customise_commands "process.rawPrimeDataRepacker.src='rawDataRepacker'" --repacked --process ReHLT --filein file:Muon_outputPhysicsHIPhysicsRawPrime0.root --no_exec 
-```
-command out the following lines in `step2_REPACK.py`,
-```
-from Configuration.Eras.Era_Run3_pp_on_PbPb_approxSiStripClusters_cff import Run3_pp_on_PbPb_approxSiStripClusters
-process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters)
-```
-and include the era condition, as 
-
-```
-from Configuration.Eras.Era_Run2024_pp_on_PbPb_approxSiStripCluster import Run3_pp_on_PbPb_approxSiStripClusters_2024
-process = cms.Process('ReHLT',Run3_pp_on_PbPb_approxSiStripClusters_2024)
-```
-and proceed with `cmsRun step2_REPACK.py`. The output file is used for reRECO process. 
-```
-cmsDriver.py step3 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_pp_on_PbPb_approxSiStripClusters --filein file:step2_REPACK.root --no_exec 
+cmsDriver.py test --conditions 140X_dataRun3_Prompt_v3 -s RAW2DIGI,L1Reco,RECO  --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp --era Run3_pp_on_PbPb_approxSiStripClusters_2023 --customise Configuration/DataProcessing/RecoTLR.customisePostEra_Run3 --hltProcess HLTX -n 100 --filein file:Muon_outputPhysicsHIPhysicsRawPrime0.root --repacked --no_exec
 ```
 And change the outputCommands for the step3 configurateion `step3_RAW2DIGI_L1Reco_RECO.py`  by,
 ```
@@ -67,13 +50,13 @@ And change the outputCommands for the step3 configurateion `step3_RAW2DIGI_L1Rec
 'keep *_*siStripClusters*_*_*',
 'keep *_*generalTracks*_*_*',
 'keep *_hltSiStripClusters2ApproxClusters_*_*',
-'keep DetIds_hltSiStripRawToDigi_*_ReHLT',
-'keep FEDRawDataCollection_raw*_*_ReHLT',
-'keep FEDRawDataCollection_hltSiStripDigiToZSRaw_*_ReHLT',
-'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_ReHLT',
-'keep edmTriggerResults_*_*_ReHLT',
-'keep triggerTriggerEvent_*_*_ReHLT'
+'keep DetIds_hltSiStripRawToDigi_*_HLTX',
+'keep FEDRawDataCollection_rawPrime*_*_HLTX',
+'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_HLTX',
+'keep edmTriggerResults_*_*_HLTX',
+<<'keep triggerTriggerEvent_*_*_HLTX'
 ```
+
 command out the following lines in `step3_RAW2DIGI_L1Reco_RECO.py`,
 ```
 from Configuration.Eras.Era_Run3_pp_on_PbPb_approxSiStripClusters_cff import Run3_pp_on_PbPb_approxSiStripClusters
