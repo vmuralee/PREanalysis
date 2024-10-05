@@ -40,9 +40,9 @@ Or simply Rerun existing `prehlt.py` file.
 ## Re-run the reco step in RAW' dataset
 Rerun the reco step from the output of `prehlt.py`
 ```
-cmsDriver.py test --conditions 140X_dataRun3_Prompt_v3 -s RAW2DIGI,L1Reco,RECO  --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp --era Run3_pp_on_PbPb_approxSiStripClusters_2023 --customise Configuration/DataProcessing/RecoTLR.customisePostEra_Run3 --hltProcess HLTX -n 100 --filein file:Muon_outputPhysicsHIPhysicsRawPrime0.root --repacked --no_exec
+cmsDriver.py step_reco --conditions 140X_dataRun3_Prompt_v3 -s RAW2DIGI,L1Reco,RECO  --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp --era Run3_pp_on_PbPb_approxSiStripClusters_2023 --customise Configuration/DataProcessing/RecoTLR.customisePostEra_Run3 --hltProcess HLTX -n 100 --filein file:Muon_outputPhysicsHIPhysicsRawPrime0.root --repacked --no_exec
 ```
-And change the outputCommands for the step3 configurateion `step3_RAW2DIGI_L1Reco_RECO.py`  by,
+And change the outputCommands for the step3 configurateion `step_reco_RAW2DIGI_L1Reco_RECO.py`  by,
 ```
 'drop *',
 'keep *_ak4PFJets_*_*',
@@ -57,7 +57,7 @@ And change the outputCommands for the step3 configurateion `step3_RAW2DIGI_L1Rec
 'keep triggerTriggerEvent_*_*_HLTX'
 ```
 
-command out the following lines in `step3_RAW2DIGI_L1Reco_RECO.py`,
+command out the following lines in `step_reco_RAW2DIGI_L1Reco_RECO.py`,
 ```
 from Configuration.Eras.Era_Run3_pp_on_PbPb_approxSiStripClusters_cff import Run3_pp_on_PbPb_approxSiStripClusters
 process = cms.Process('reRECO',Run3_pp_on_PbPb_approxSiStripClusters)
@@ -68,11 +68,11 @@ and include the era condition, as
 from Configuration.Eras.Era_Run2024_pp_on_PbPb_approxSiStripCluster import Run3_pp_on_PbPb_approxSiStripClusters_2024
 process = cms.Process('reRECO',Run3_pp_on_PbPb_approxSiStripClusters_2024)
 ```
-After, running `step3_RAW2DIGI_L1Reco_RECO.py` file will produced reconstructed tracks,jets and met. 
+After, running `step_reco_RAW2DIGI_L1Reco_RECO.py` file will produced reconstructed tracks,jets and met. 
 
 ## Re-run the reco step in RAW dataset.
 
 Finally the RAW dataset also re-run with the condition `auto:run3_data_prompt`. 
 ```
-cmsDriver.py step5 --conditions auto:run3_data_prompt -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_2024 --nThreads 254 --filein /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root
+cmsDriver.py step_raw --conditions 140X_dataRun3_Prompt_v3 -s RAW2DIGI,L1Reco,RECO --datatier RECO --eventcontent RECO --data --process reRECO --scenario pp -n 100 --repacked --era Run3_2024 --nThreads 254 --filein /store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root
 ```
