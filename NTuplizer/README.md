@@ -54,7 +54,7 @@ And change the outputCommands for the step3 configurateion `step3_RAW2DIGI_L1Rec
 'keep FEDRawDataCollection_rawPrime*_*_HLTX',
 'keep GlobalObjectMapRecord_hltGtStage2ObjectMap_*_HLTX',
 'keep edmTriggerResults_*_*_HLTX',
-<<'keep triggerTriggerEvent_*_*_HLTX'
+'keep triggerTriggerEvent_*_*_HLTX'
 ```
 
 command out the following lines in `step3_RAW2DIGI_L1Reco_RECO.py`,
