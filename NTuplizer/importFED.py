@@ -12,14 +12,14 @@ def FEDinclude(dname):
     elif dname == 'ES':
         listofarray = FEDlist['ES+'] + FEDlist['ES-']
     elif dname == 'HCAL':
-        listofarray = FEDlist['HBHEB']+FEDlist['HBHEA']+FEDlist['HBHEB']+FEDlist['HBHEC']+FEDlist['HF']+FEDlist['HO']
+        listofarray = FEDlist['HBHEB']+FEDlist['HBHEA']+FEDlist['HBHEC']+FEDlist['HF']+FEDlist['HO']
     elif dname == 'Strips':
         listofarray = FEDlist['TEC+']+FEDlist['TEC-']+FEDlist['TOB']+FEDlist['TIBTID']
     elif dname == 'Muons':
         listofarray = FEDlist['CSC+'] + FEDlist['CSC-']+FEDlist['DT+']+FEDlist['DT-']+FEDlist['DT0']+FEDlist['DTUP'] + FEDlist['RPC'] + FEDlist['GEM+'] + FEDlist['GEM-']+ FEDlist['GEMPILOT'] 
     #elif dname == 'All':
     else:
-        listofarray = FEDlist['CALOL1']+FEDlist['CALOL2']
+        listofarray = FEDlist['CALOL1']+FEDlist['CALOL2']+FEDlist['CPM-PRI']+FEDlist['TWINMUX']+FEDlist['TOTDET']
     arr = [list(ar) if type(ar) == range else [ar] for ar in listofarray]
     n_arr = arr[0]
     for i in range(1,len(arr)):
@@ -62,6 +62,6 @@ def FEDexclude(dname):
         n_arr = n_arr+arr[i]        
     return n_arr
 
-print(FEDexclude('All'))
+#print(FEDexclude('All'))
 
     

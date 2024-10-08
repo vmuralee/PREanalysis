@@ -381,7 +381,7 @@ process.rawDataRepacker = cms.EDProducer( "RawDataCollectorByLabel",
 )
 
 cms_input_arr = (cms.vuint32(tuple(FEDinclude(str(detector)))))
-
+print("Included FED: ",tuple(FEDinclude(str(detector))))
 process.rawPrimeDataRepacker = cms.EDProducer( "EvFFEDSelector",
     inputTag = cms.InputTag( "rawDataCollector" ),
     fedList = cms_input_arr
@@ -403,7 +403,7 @@ process.hltPreDatasetHIPhysicsRawPrime = cms.EDFilter( "HLTPrescaler",
 )
 
 process.hltOutputPhysicsHIPhysicsRawPrime0 = cms.OutputModule( "PoolOutputModule",
-    fileName = cms.untracked.string( "/eos/home-v/vmuralee/PREanalysis/outputFiles/Muon_outputPhysicsHIPhysicsRawPrime0.root" ),
+                                                               fileName = cms.untracked.string( f'Muon_outputPhysicsHIPhysicsRawPrime0_{detector}.root' ),
     compressionAlgorithm = cms.untracked.string( "ZSTD" ),
     compressionLevel = cms.untracked.int32( 3 ),
     fastCloning = cms.untracked.bool( False ),
@@ -425,7 +425,7 @@ process.hltOutputPhysicsHIPhysicsRawPrime0 = cms.OutputModule( "PoolOutputModule
 
 process.HLTBeamSpot = cms.Sequence( process.hltOnlineBeamSpot + process.hltOnlineMetaDigis )
 process.HLTL1UnpackerSequence = cms.Sequence( process.hltGtStage2Digis + process.hltGtStage2ObjectMap )
-process.HLTBeginSequence = cms.Sequence( process.HLTBeamSpot + process.HLTL1UnpackerSequence + process.HLTTriggerTypeFilter )
+process.HLTBeginSequence = cms.Sequence( process.HLTBeamSpot  + process.HLTTriggerTypeFilter )#+ process.HLTL1UnpackerSequence
 process.HLTDoSiStripZeroSuppression = cms.Sequence( process.hltSiStripRawToDigi + process.hltSiStripZeroSuppression )
 process.HLTDoHIStripZeroSuppressionAndRawPrimeRepacker = cms.Sequence( process.hltSiStripDigiToZSRaw + process.hltSiStripClusterizerForRawPrime + process.hltSiStripClusters2ApproxClusters + process.rawDataRepacker + process.rawPrimeDataRepacker )
 process.HLTDoHIStripZeroSuppressionAndRawPrime = cms.Sequence( process.HLTDoSiStripZeroSuppression + process.HLTDoHIStripZeroSuppressionAndRawPrimeRepacker )
@@ -443,10 +443,12 @@ process.schedule = cms.Schedule( *( process.HLT_HIL1NotBptxOR_v8, process.Datase
 # source module (EDM inputs)
 process.source = cms.Source( "PoolSource",
     fileNames = cms.untracked.vstring(
-        '/store/data/Run2024F/EphemeralHLTPhysics1/RAW/v1/000/382/250/00000/005365a4-1194-48b8-a3c3-8da53a6a5dd5.root',
+        '/store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/382/216/00000/aadd1ab9-4eb8-4fb2-ac62-bdd1bebe882e.root'
+        #'/store/data/Run2024F/EphemeralHLTPhysics1/RAW/v1/000/382/250/00000/005365a4-1194-48b8-a3c3-8da53a6a5dd5.root',
     ),
     inputCommands = cms.untracked.vstring(
-        'keep *'
+        'drop *_*_*_RECO', 
+        'keep FEDRawDataCollection_*_*_*'
     )
 )
 
@@ -500,8 +502,8 @@ _customInfo['inputFile' ]=['/store/data/Run2024F/Muon0/RAW-RECO/ZMu-PromptReco-v
 ##['/store/data/Run2024F/EphemeralHLTPhysics1/RAW/v1/000/382/250/00000/005365a4-1194-48b8-a3c3-8da53a6a5dd5.root']
 _customInfo['realData'  ]=  True
 
-from HLTrigger.Configuration.customizeHLTforALL import customizeHLTforAll
-process = customizeHLTforAll(process,"GRun",_customInfo)
+# from HLTrigger.Configuration.customizeHLTforALL import customizeHLTforAll
+# process = customizeHLTforAll(process,"GRun",_customInfo)
 
 from HLTrigger.Configuration.customizeHLTforCMSSW import customizeHLTforCMSSW
 process = customizeHLTforCMSSW(process,"GRun")
