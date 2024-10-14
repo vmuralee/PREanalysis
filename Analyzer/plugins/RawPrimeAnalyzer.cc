@@ -18,6 +18,7 @@
 #include "DataFormats/SiStripCluster/interface/SiStripApproximateCluster.h"
 #include "DataFormats/SiStripCluster/interface/SiStripApproximateClusterCollection.h"
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
+#include "DataFormats/SiStripCluster/interface/SiStripClusterTools.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -81,6 +82,7 @@ private:
   float       barycenter;
   uint16_t    size;
   int         charge;
+  float       chargePerCM;
 
   const static int nMax = 8000000;
   float       hitX[nMax];
@@ -125,7 +127,8 @@ RawPrimeAnalyzer::RawPrimeAnalyzer(const edm::ParameterSet& conf) {
   onlineClusterTree->Branch("barycenter", &barycenter, "barycenter/F");
   onlineClusterTree->Branch("size", &size, "size/s");
   onlineClusterTree->Branch("charge", &charge, "charge/I");
-
+  <onlineClusterTree->Branch("chargePerCM", &chargePerCM, "chargePerCM/F");
+	
   onlineClusterTree->Branch("x", hitX, "x[size]/F");
   onlineClusterTree->Branch("y", hitY, "y[size]/F");
   onlineClusterTree->Branch("z", hitZ, "z[size]/F");
@@ -182,7 +185,7 @@ void RawPrimeAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& e
       barycenter = convertedCluster.barycenter();
       size       = convertedCluster.size();
       charge     = convertedCluster.charge();
-
+      chargePerCM = siStripClusterTools::chargePerCM(detId,convertedCluster);
       for (int strip = firstStrip; strip < endStrip+1; ++strip)
 	{
 	  GlobalPoint gp = (tkGeom->idToDet(detId))->surface().toGlobal(p.localPosition((float) strip));
