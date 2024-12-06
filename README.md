@@ -25,3 +25,4 @@ scram b -j 32
 ```
 cd $CMSSW_BASE/src/TrackAna
 ```
+To perform the MC 
