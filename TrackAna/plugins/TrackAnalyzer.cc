@@ -30,6 +30,19 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/JetReco/interface/PFJet.h"
+#include "DataFormats/JetReco/interface/PFJetCollection.h"
+#include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
+#include "DataFormats/TrackerRecHit2D/interface/SiStripRecHit1D.h"
+#include "DataFormats/TrackerRecHit2D/interface/SiStripRecHit2D.h"
+#include "DataFormats/SiStripCluster/interface/SiStripClusterTools.h"
+#include "DataFormats/TrackerRecHit2D/interface/TrackerSingleRecHit.h"
+#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
+#include "SimDataFormats/Track/interface/SimTrack.h"
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TH1.h"
@@ -51,6 +64,7 @@
 // This will improve performance in multithreaded jobs.
 
 using reco::TrackCollection;
+//using reco::PFJetCollection;
 
 class TrackAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
@@ -64,20 +78,66 @@ private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   //void endJob() override;
   void SetVarToZero();
+  // Example function to calculate deposited charge
+  double calculateDepositedCharge(const PSimHit& hit);
+
   // ----------member data ---------------------------
   edm::EDGetTokenT<reco::TrackCollection> tracksToken_;  //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<reco::PFJetCollection> jetToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> m_geomToken_;
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsHighTofToken_;
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsLowTofToken_;
+  edm::EDGetTokenT<std::vector<SimTrack>> g4SimHitsTrackToken_;
   //edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
   
   TTree* trackTree;
+
   edm::Service<TFileService> fs;
 
   edm::EventNumber_t eventN;
   const static int nMax = 40000000;
+  const static int nClus = 4000;
 
   uint16_t nTracks;
-  
+  int nJets;
+
   int runN;
   int lumi;
+
+  // int charge_lowpt;
+  // int charge_highpt;
+  // int avgcharge_lowpt;
+  // int avgcharge_highpt;
+  // int width_lowpt;
+  // int width_highpt;
+  
+  float clus_chargePerCM;
+  int clus_charge;
+  int clus_width;
+  int clus_avgcharge;
+  int clus_detId;
+  uint16_t clus_firstStrip;
+  uint16_t clus_endStrip;
+  float clus_barycenter;
+
+  int simhit_hightof_charge;
+  int simhit_lowtof_charge;
+  int simhit_charge;
+  float simhit_chargePerCM;
+  int simhit_width;
+  int simhit_avgcharge;
+  int simhit_hightof_detId;
+  int simhit_lowtof_detId;
+  float simhit_hightof_pT;
+  float simhit_lowtof_pT;
+  float simhit_pT;
+  uint16_t simhit_firstStrip;
+  uint16_t simhit_endStrip;
+  float simhit_barycenter;
+
+  float hit_pt;
+  float hit_eta;
+  float hit_phi;
 
   float trkPt[nMax];
   float trkEta[nMax];
@@ -87,12 +147,19 @@ private:
   float trkDz1[nMax];
   float trkDzError1[nMax];
   unsigned char trkAlgo[nMax];
-  uint8_t trkNHit[nMax];
-  uint8_t trkNdof[nMax];
+  int  trkNHit[nMax];
+  int  trkNdof[nMax];
   uint8_t trkNlayer[nMax];
 
   float trkChi2[nMax];
+  float trkNChi2[nMax];
   float trkPtError[nMax];
+  
+  float jetPt[nMax];
+  float jetEta[nMax];
+  float jetPhi[nMax];
+  float jetMass[nMax];
+
   
 };
 
@@ -101,6 +168,11 @@ TrackAnalyzer::TrackAnalyzer(const edm::ParameterSet& iConfig){
 //: tracksToken_(consumes<TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tracks"))) {
   
   tracksToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("tracks"));
+  jetToken_   = consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("jets"));
+  g4SimHitsLowTofToken_ = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsLowTofTag"));
+  g4SimHitsHighTofToken_ = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsHighTofTag"));
+  g4SimHitsTrackToken_ = consumes<std::vector<SimTrack>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTrackTag"));
+  m_geomToken_ = esConsumes(); 
   //beamSpotToken_ = consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("beamSpot"));
     
   usesResource("TFileService");
@@ -109,8 +181,8 @@ TrackAnalyzer::TrackAnalyzer(const edm::ParameterSet& iConfig){
   trackTree->Branch("event", &eventN, "event/i");
   trackTree->Branch("run",   &runN, "run/I");
   trackTree->Branch("lumi",  &lumi, "lumi/I");
-  trackTree->Branch("nTracks",  &nTracks, "nTracks/I");
 
+  trackTree->Branch("nTracks",  &nTracks, "nTracks/I");
   trackTree->Branch("trkPt",  trkPt, "trkPt[nTracks]/F");
   trackTree->Branch("trkEta",  trkEta, "trkEta[nTracks]/F");
   trackTree->Branch("trkPhi",  trkPhi, "trkPhi[nTracks]/F");
@@ -121,12 +193,49 @@ TrackAnalyzer::TrackAnalyzer(const edm::ParameterSet& iConfig){
   trackTree->Branch("trkDzError1",  trkDzError1, "trkDzError1[nTracks]/F");
   
   trackTree->Branch("trkChi2",  trkChi2, "trkChi2[nTracks]/F");
+  trackTree->Branch("trkNChi2",  trkNChi2, "trkNChi2[nTracks]/F");
   trackTree->Branch("trkPtError",  trkPtError, "trkPtError[nTracks]/F");
 
   trackTree->Branch("trkAlgo",trkAlgo,"trkAlgo[nTracks]/s");
   trackTree->Branch("trkNHit",trkNHit,"trkNHit[nTracks]/I");
   trackTree->Branch("trkNdof",trkNdof,"trkNdof[nTracks]/I");
   trackTree->Branch("trkNlayer",trkNlayer,"trkNlayer[nTracks]/I");
+  
+  trackTree->Branch("nJets",  &nJets, "nJets/I");
+  trackTree->Branch("jetPt",  jetPt, "jetPt[nJets]/F");
+  trackTree->Branch("jetEta",  jetEta, "jetEta[nJets]/F");
+  trackTree->Branch("jetPhi",  jetPhi, "jetPhi[nJets]/F");
+  trackTree->Branch("jetMass",  jetMass, "jetMass[nJets]/F");
+
+  // cluster variable
+  trackTree->Branch("hit_eta",&hit_eta,"hit_eta/F");
+  trackTree->Branch("hit_phi",&hit_phi,"hit_phi/F");
+  trackTree->Branch("hit_pt",&hit_pt,"hit_pt/F");
+
+  trackTree->Branch("clus_chargePerCM", &clus_chargePerCM, "clus_chargePerCM/F");
+  trackTree->Branch("clus_charge",&clus_charge,"clus_charge/I");
+  trackTree->Branch("clus_width",&clus_width,"clus_width/I");
+  trackTree->Branch("clus_avgcharge",&clus_avgcharge,"clus_avgcharge/I");
+  trackTree->Branch("clus_detId",&clus_detId,"clus_detId/I");
+  trackTree->Branch("clus_firstStrip",&clus_firstStrip,"clus_firstStrip/I");
+  trackTree->Branch("clus_endStrip",&clus_endStrip,"clus_endStrip/I");
+  trackTree->Branch("clus_barycenter",&clus_barycenter,"clus_barycenter/F");
+
+  trackTree->Branch("simhit_hightof_charge",&simhit_hightof_charge,"simhit_hightof_charge/I");
+  trackTree->Branch("simhit_lowtof_charge",&simhit_lowtof_charge,"simhit_lowtof_charge/I");
+  trackTree->Branch("simhit_charge",&simhit_charge,"simhit_charge/I");
+  trackTree->Branch("simhit_chargePerCM",&simhit_chargePerCM,"simhit_chargePerCM/F");
+
+  trackTree->Branch("simhit_pT",&simhit_pT,"simhit_pT/F");
+  trackTree->Branch("simhit_hightof_pT",&simhit_hightof_pT,"simhit_hightof_pT/F");
+  trackTree->Branch("simhit_lowtof_pT",&simhit_lowtof_pT,"simhit_lowtof_pT/F");
+  trackTree->Branch("simhit_hightof_detId",&simhit_hightof_detId,"simhit_hightof_detId/I");
+  trackTree->Branch("simhit_lowtof_detId",&simhit_lowtof_detId,"simhit_lowtof_detId/I");
+  trackTree->Branch("simhit_firstStrip",&simhit_firstStrip,"simhit_firstStrip/I");
+  trackTree->Branch("simhit_endStrip",&simhit_endStrip,"simhit_endStrip/I");
+  trackTree->Branch("simhit_barycenter",&simhit_barycenter,"simhit_barycenter/F");
+  
+  
 }
 
 TrackAnalyzer::~TrackAnalyzer() {
@@ -136,36 +245,74 @@ TrackAnalyzer::~TrackAnalyzer() {
 // ------------ method called for each event  ------------
 void TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
-  SetVarToZero();
+  //SetVarToZero();
 
   runN = iEvent.id().run();
   eventN = iEvent.id().event();
   lumi = iEvent.id().luminosityBlock();
   const auto& tracksHandle = iEvent.getHandle(tracksToken_);
+  const auto& jetHandle = iEvent.getHandle(jetToken_);
+  // edm::Handle<std::vector<PSimHit>> g4SimHits;
+  // iEvent.getByToken(g4SimHitsToken_,g4SimHits);
 
-  
-  // edm::Handle<reco::TrackCollection> tracks;
-  // iEvent.getByToken(tracksToken_, tracks);
+  edm::Handle<std::vector<PSimHit>> g4SimHits_htof = iEvent.getHandle(g4SimHitsHighTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHits_ltof = iEvent.getHandle(g4SimHitsLowTofToken_);
+  edm::Handle<std::vector<SimTrack>> g4SimHitsTrack = iEvent.getHandle(g4SimHitsTrackToken_);
 
-  // edm::Handle<reco::BeamSpot> beamSpot;
-  // iEvent.getByToken(beamSpotToken_, beamSpot);
+  const TrackerGeometry* trackerGeometry = &iSetup.getData(m_geomToken_);
+  if (!g4SimHits_ltof.isValid()){
+    edm::LogError("TrackAnalyzer") << "No valid g4SimHits collection found";
+    return;
+  }
 
   if (!tracksHandle.isValid()) {
     edm::LogError("TrackAnalyzer") << "No valid track collection found";
     return;
   }
-  
+  if (!jetHandle.isValid()) {
+    edm::LogError("TrackAnalyzer") << "No valid jet collection found";
+    return;
+  }
+
+  //for(const auto& simTrack : *g4SimHitsTrack){
+  for (const auto& simhit : *g4SimHits_htof){
+    auto momentum = simhit.momentumAtEntry(); // momentumEntry is a LorentzVector
+
+    float pT = std::sqrt(momentum.x()*momentum.x() + momentum.y()*momentum.y()); 
+    simhit_hightof_pT =  pT;
+    simhit_hightof_detId = simhit.detUnitId();
+    simhit_hightof_charge = calculateDepositedCharge(simhit);
+    simhit_charge = simhit_hightof_charge;
+    simhit_chargePerCM = simhit_hightof_charge*siStripClusterTools::sensorThicknessInverse(simhit_hightof_detId);
+    // auto simTrack = (*g4SimHitsTrack)[simhit.trackId()];
+    // auto trkmomentum = simTrack.momentum();
+    // simhit_pT = std::sqrt(trkmomentum.x()*trkmomentum.x() + trkmomentum.y()*trkmomentum.y()); 
+    trackTree->Fill();
+  }
+  for (const auto& simhit : *g4SimHits_ltof){
+    auto momentum = simhit.momentumAtEntry(); // momentumEntry is a LorentzVector
+
+    float pT = std::sqrt(momentum.x()*momentum.x() + momentum.y()*momentum.y()); 
+    simhit_lowtof_pT = pT;
+    simhit_lowtof_detId = simhit.detUnitId();
+    simhit_lowtof_charge = calculateDepositedCharge(simhit);
+    simhit_charge = simhit_lowtof_charge;
+    simhit_chargePerCM = simhit_lowtof_charge*siStripClusterTools::sensorThicknessInverse(simhit_lowtof_detId);
+    // auto simTrack = (*g4SimHitsTrack)[simhit.trackId()];
+    // auto trkmomentum = simTrack.momentum();
+    // simhit_pT = std::sqrt(trkmomentum.x()*trkmomentum.x() + trkmomentum.y()*trkmomentum.y()); 
+    trackTree->Fill();
+  }
+
+    //}
+
   // Retrieve the actual product from the handle
   const reco::TrackCollection& tracks = *tracksHandle;
-
-  // if (!beamSpot.isValid()) {
-  //   edm::LogError("TrackAnalyzer") << "No valid beam spot found";
-  //   return;
-  // }
- 
+  const reco::PFJetCollection& jets = *jetHandle;
   
+  int TotHits = 0;
   for (const auto& track : tracks) {
-
+    int numHits = 0, numExpectedHits =0;
     if (nTracks >= nMax) {
       continue;
     }
@@ -177,14 +324,87 @@ void TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
     trkDxyError1[nTracks]= track.dxyError();
     trkDzError1[nTracks] = track.dzError();
     trkPtError[nTracks] = track.ptError();
-    trkChi2[nTracks] = track.normalizedChi2();
+    trkChi2[nTracks] = track.chi2();
+    trkNChi2[nTracks] = track.normalizedChi2();
     trkNdof[nTracks] = track.ndof();
     trkAlgo[nTracks] = track.algo();
     trkNHit[nTracks] = track.numberOfValidHits();
     trkNlayer[nTracks] = track.hitPattern().trackerLayersWithMeasurement();
     nTracks++;
+
+    
+    for (auto const &hit : track.recHits()){
+      if (!hit->isValid())
+      	continue;
+
+      DetId detid = hit->geographicalId();
+      int subDet = detid.subdetId();
+      Point3DBase<float, GlobalTag> modulepos = trackerGeometry->idToDet(detid)->position();
+     
+      //bool hitInStrip = (subDet == SiStripDetId::TIB) || (subDet == SiStripDetId::TID) || (subDet == SiStripDetId::TOB) || (subDet == SiStripDetId::TEC);
+      bool hitInStrip = (subDet == SiStripDetId::TOB) ;//|| (subDet == SiStripDetId::TEC);
+      if (!hitInStrip)continue;
+      numHits++;
+      clus_detId  = detid;
+      hit_eta = modulepos.eta();
+      hit_phi = modulepos.phi();
+      
+      const std::type_info &type = typeid(*hit);
+      if (type == typeid(SiStripRecHit1D)){
+	  
+	const SiStripRecHit1D *striphit = dynamic_cast<const SiStripRecHit1D *>(hit);
+	if(striphit != nullptr){
+	  SiStripRecHit1D::ClusterRef stripclust(striphit->cluster());
+	  //clus_chargePerCM = siStripClusterTools::chargePerCM(detid,(*stripclust));
+	  clus_charge = stripclust->charge();
+	  clus_width  = stripclust->size();
+	  clus_avgcharge = (clus_charge+clus_width/2)/clus_width;
+	  //float comp_bary = std::round(stripclust->barycenter() * 65535/770.0);
+	  clus_barycenter = stripclust->barycenter();//comp_bary*770.0/65535;
+	  clus_firstStrip = stripclust->firstStrip();//clus_barycenter - 0.5f*clus_width;
+	  clus_endStrip  = stripclust->endStrip();//clus_barycenter + 0.5f*clus_width;
+	  hit_pt = track.pt();
+	  trackTree->Fill();
+	   
+	}
+	  
+      }
+      else if (type == typeid(SiStripRecHit2D)){
+	  
+	const SiStripRecHit2D *striphit2D = dynamic_cast<const SiStripRecHit2D *>(hit);
+	if(striphit2D != nullptr){    
+
+	  SiStripRecHit2D::ClusterRef stripclust2D(striphit2D->cluster());
+	  //clus_chargePerCM = siStripClusterTools::chargePerCM(detid,(*stripclust2D));
+	  clus_charge = stripclust2D->charge();   
+	  clus_width  = stripclust2D->size();
+	  clus_avgcharge = (clus_charge+clus_width/2)/clus_width;
+	  float comp_bary = std::round(stripclust2D->barycenter() * 65535/770.0);//stripclust2D->barycenter();
+	  clus_barycenter = comp_bary*770.0/65535;
+	  clus_firstStrip = stripclust2D->firstStrip();//clus_barycenter - 0.5f*clus_width;
+	  clus_endStrip  = stripclust2D->endStrip();//clus_barycenter + 0.5f*clus_width;
+	  hit_pt = track.pt();
+	  trackTree->Fill();
+	    
+	}
+      }
+
+    }
+    
   }
 
+
+
+  for (const auto& jet : jets) {
+    if (nJets >= nMax) {
+      continue;
+    }
+    jetPt[nJets] = jet.pt();
+    jetEta[nJets] = jet.eta();
+    jetPhi[nJets] = jet.phi();
+    jetMass[nJets] = jet.mass();
+    nJets++;
+  }
   trackTree->Fill();
 
   
@@ -206,9 +426,39 @@ void TrackAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& description
   // descriptions.addWithDefaultLabel(desc);
   
 }
+double TrackAnalyzer::calculateDepositedCharge(const PSimHit& hit) {
+  const double eV_per_pair = 3.6; // Energy needed to create an e-h pair in silicon (eV)
+  const double GeV_to_eV = 1e9;  // Conversion factor from GeV to eV
+
+  // Get energy loss in GeV
+  double energyLoss_GeV = hit.energyLoss();
+
+  // Convert to eV
+  double energyLoss_eV = energyLoss_GeV * GeV_to_eV;
+
+  // Calculate charge in number of e-h pairs
+  double charge = energyLoss_eV / eV_per_pair;
+
+  return charge/(270); // Charge in number of e-h pairs
+}
 void TrackAnalyzer::SetVarToZero()
 {
   nTracks = 0;
+  nJets = 0;
+  simhit_charge =0;
+  simhit_lowtof_charge =0;
+  simhit_hightof_charge =0;
+  simhit_lowtof_pT =0;
+  simhit_hightof_pT =0;
+  clus_charge = 0;
+  clus_width = 0;
+  clus_avgcharge = 0;
+  clus_barycenter =0;
+  clus_firstStrip =0;
+  clus_endStrip = 0;
+  clus_detId = 0;
+  hit_eta = 0;
+  hit_phi = 0;
   for (int i = 0; i < nMax; ++i) {
     trkPt[i] = 0;
     trkEta[i] = 0;
@@ -219,6 +469,14 @@ void TrackAnalyzer::SetVarToZero()
     trkDzError1[i] = 0;
     trkPtError[i] = 0;
     trkChi2[i] = 0;
+    trkNChi2[i] = 0;
+    trkNdof[i]=0;
+  }
+  for (int i=0; i < nMax; ++i){
+    jetPt[i] = 0;
+    jetEta[i] = 0;
+    jetPhi[i] = 0;
+    jetMass[i] = 0;
     
   }
 }

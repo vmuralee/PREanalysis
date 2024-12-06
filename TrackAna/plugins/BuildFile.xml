@@ -4,4 +4,12 @@
 <use name="FWCore/PluginManager"/>
 <use name="CommonTools/UtilAlgos"/>
 <use name="FWCore/ServiceRegistry"/>
+<use name="SimDataFormats/TrackingHit"/>
+<use name="DataFormats/Common"/>
+<use name="DataFormats/SiStripDetId"/>
+<use name="DataFormats/Alignment"/>
+<use name="DataFormats/TrackerRecHit2D"/>
+<use name="Geometry/Records"/>
+<use name="Geometry/TrackerGeometryBuilder"/>
+<use name="Utilities/General"/>
 <flags EDM_PLUGIN="1"/>
