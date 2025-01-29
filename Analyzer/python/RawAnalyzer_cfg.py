@@ -23,7 +23,7 @@ options.register ('eventsToProcessTxt',
               VarParsing.varType.string,
               "Events to process text")
 options.register ('n',
-                  100, # default value
+                  2000, # default value
                   VarParsing.multiplicity.singleton, # singleton or list
                   VarParsing.varType.int,          # string, int, bool or float
                   "n")
@@ -74,7 +74,7 @@ process.TFileService = cms.Service("TFileService", fileName=cms.string(options.o
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '140X_dataRun3_Prompt_v3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '140X_mcRun3_2024_realistic_v3', '')
 
 process.dump_raw = cms.EDAnalyzer("RawAnalyzer",
 #    tracks = cms.InputTag('generalTracks'),
@@ -101,7 +101,7 @@ process=convertToUnscheduled(process)
 
 
 # Customisation from command line
-process.options.numberOfThreads = 8
+process.options.numberOfThreads = 250
 process.options.numberOfStreams = 0
 
 #Have logErrorHarvester wait for the same EDProducers to finish as those providing data for the OutputModule

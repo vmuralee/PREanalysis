@@ -41,7 +41,7 @@
 #include "DataFormats/SiStripCluster/interface/SiStripApproximateClusterCollection.h"
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
-
+#include "DataFormats/SiStripCluster/interface/SiStripClusterTools.h"
 
 
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -105,6 +105,7 @@ private:
   float       barycenter;
   uint16_t    size;
   int         charge;
+  float       chargePerCM;
 
   const static int nMax = 800000;
   float       hitX[nMax];
@@ -153,6 +154,7 @@ RawAnalyzer::RawAnalyzer(const edm::ParameterSet& iConfig){
   offlineClusterTree->Branch("barycenter", &barycenter, "barycenter/F");
   offlineClusterTree->Branch("size", &size, "size/s");
   offlineClusterTree->Branch("charge", &charge, "charge/I");
+  offlineClusterTree->Branch("chargePerCM", &chargePerCM, "chargePerCM/F");
 
   offlineClusterTree->Branch("x", hitX, "x[size]/F");
   offlineClusterTree->Branch("y", hitY, "y[size]/F");
@@ -190,30 +192,34 @@ void RawAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     runN   = (int) iEvent.id().run();
     lumi   = (int) iEvent.id().luminosityBlock();
     detId = detSiStripClusters.detId();
+    if (detId < 460000000 && detId > 420000000){
+      for (const auto& stripCluster : detSiStripClusters) {
+      
+	firstStrip  = stripCluster.firstStrip();
+	endStrip    = stripCluster.endStrip();
+	barycenter  = stripCluster.barycenter();
+	size        = stripCluster.size();
+	charge      = stripCluster.charge();
+	chargePerCM = siStripClusterTools::chargePerCM(detId,stripCluster);
+	const auto& _detId = detId; // for the capture clause in the lambda function
+	auto det = std::find_if(tkDets.begin(), tkDets.end(), [_detId](auto& elem) -> bool {
+	    return (elem->geographicalId().rawId() == _detId);
+	  });
+	const StripTopology& p = dynamic_cast<const StripGeomDetUnit*>(*det)->specificTopology();
+	for (int strip = firstStrip; strip < endStrip+1; ++strip)
+	  {
+	    GlobalPoint gp = (tkGeom->idToDet(detId))->surface().toGlobal(p.localPosition((float) strip));
 
-    for (const auto& stripCluster : detSiStripClusters) {
+	    hitX   [strip - firstStrip] = gp.x();
+	    hitY   [strip - firstStrip] = gp.y();
+	    channel[strip - firstStrip] = strip;
+	    adc    [strip - firstStrip] = stripCluster[strip - firstStrip];
+	  }
 
-      firstStrip  = stripCluster.firstStrip();
-      endStrip    = stripCluster.endStrip();
-      barycenter  = stripCluster.barycenter();
-      size        = stripCluster.size();
-      charge      = stripCluster.charge();
-
-      const auto& _detId = detId; // for the capture clause in the lambda function
-      auto det = std::find_if(tkDets.begin(), tkDets.end(), [_detId](auto& elem) -> bool {
-	  return (elem->geographicalId().rawId() == _detId);
-	});
-      const StripTopology& p = dynamic_cast<const StripGeomDetUnit*>(*det)->specificTopology();
-      for (int strip = firstStrip; strip < endStrip+1; ++strip)
-	{
-	  GlobalPoint gp = (tkGeom->idToDet(detId))->surface().toGlobal(p.localPosition((float) strip));
-
-	  hitX   [strip - firstStrip] = gp.x();
-	  hitY   [strip - firstStrip] = gp.y();
-	  channel[strip - firstStrip] = strip;
-	  adc    [strip - firstStrip] = stripCluster[strip - firstStrip];
-	}
-      offlineClusterTree->Fill();
+	offlineClusterTree->Fill();
+      }
+      
+      //}
     }
   }
   // for (const auto& track : iEvent.get(tracksToken_)) {

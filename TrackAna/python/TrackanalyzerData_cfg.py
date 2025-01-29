@@ -19,6 +19,8 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
+        #'root://cms-xrd-global.cern.ch///store/data/Run2024H/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/385/836/00000/1501c861-c37a-42e5-a1a0-48ee5dc1be01.root'
+        #'/store/data/Run2024J/Muon0/RAW-RECO/ZMu-PromptReco-v1/000/387/343/00000/f3673db1-20fb-4208-aa30-2b2483ea2e66.root'
         #'/store/relval/CMSSW_14_0_18/RelValTTbar_14TeV/GEN-SIM-RECO/140X_mcRun3_2022_realistic_v12_STD_noPU_2022_reMC-v1/2590000/493f8853-13f3-483f-87c0-0d8c3d87fb38.root'
         #'/store/relval/CMSSW_14_0_0/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/140X_mcRun3_2023_realistic_v3_STD_2023_noPU-v1/2580000/6d072f9b-382f-423f-91d5-10d8fd0c8a49.root'
         #'/store/mc/CMSSW_14_1_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/140X_mcRun3_2024_realistic_v4_STD_2024_noPU-v2/2550000/642e14a0-2cf6-46ec-af58-5af55ecb74a4.root'
@@ -63,6 +65,6 @@ process.outputTracks = cms.OutputModule("PoolOutputModule",
     )
 )
 
-process.TFileService = cms.Service("TFileService", fileName=cms.string('/scratchssd/muraleed/PREanalysis/flat_ntuples/Flat_RawRelValMinBiasTrack.root'))#'Flat_RawPrimeMCMinBiasNoPUTrackOT.root'))
+process.TFileService = cms.Service("TFileService", fileName=cms.string('/scratchssd/muraleed/PREanalysis/flat_ntuples/Flat_MinBiasRawReco.root'))#'Flat_RawPrimeMCMinBiasNoPUTrackOT.root'))
 
 process.p = cms.Path(process.trackAnalyzer)

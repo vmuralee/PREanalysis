@@ -90,7 +90,8 @@ private:
   edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsLowTofToken_;
   edm::EDGetTokenT<std::vector<SimTrack>> g4SimHitsTrackToken_;
 
-  
+  TTree* simTreeLoTof;
+  TTree* simTreeHiTof;
   TTree* trackTree;
 
   edm::Service<TFileService> fs;
@@ -118,7 +119,9 @@ private:
   int simhit_hightof_charge;
   int simhit_lowtof_charge;
   int simhit_charge;
-  float simhit_chargePerCM;
+  float simhit_hightof_chargePerCM;
+  float simhit_lowtof_chargePerCM;
+
   int simhit_width;
   int simhit_avgcharge;
   int simhit_hightof_detId;
@@ -126,6 +129,11 @@ private:
   float simhit_hightof_pT;
   float simhit_lowtof_pT;
   float simhit_pT;
+
+  float simhit_x;
+  float simhit_y;
+  float simhit_z;
+  
   uint16_t simhit_firstStrip;
   uint16_t simhit_endStrip;
   float simhit_barycenter;
@@ -155,7 +163,7 @@ private:
   float jetPhi[nMax];
   float jetMass[nMax];
 
-  
+  bool fromTrack;  
 };
 
 
@@ -174,6 +182,9 @@ TrackAnalyzer::TrackAnalyzer(const edm::ParameterSet& iConfig){
   usesResource("TFileService");
 
   trackTree = fs->make<TTree>("trackTree","trackTree");
+  simTreeLoTof = fs->make<TTree>("simTreeLoTof","simTreeLoTof");
+  simTreeHiTof = fs->make<TTree>("simTreeHiTof","simTreeHiTof");
+
   trackTree->Branch("event", &eventN, "event/i");
   trackTree->Branch("run",   &runN, "run/I");
   trackTree->Branch("lumi",  &lumi, "lumi/I");
@@ -216,22 +227,29 @@ TrackAnalyzer::TrackAnalyzer(const edm::ParameterSet& iConfig){
   trackTree->Branch("clus_firstStrip",&clus_firstStrip,"clus_firstStrip/I");
   trackTree->Branch("clus_endStrip",&clus_endStrip,"clus_endStrip/I");
   trackTree->Branch("clus_barycenter",&clus_barycenter,"clus_barycenter/F");
-
-  trackTree->Branch("simhit_hightof_charge",&simhit_hightof_charge,"simhit_hightof_charge/I");
-  trackTree->Branch("simhit_lowtof_charge",&simhit_lowtof_charge,"simhit_lowtof_charge/I");
-  trackTree->Branch("simhit_charge",&simhit_charge,"simhit_charge/I");
-  trackTree->Branch("simhit_chargePerCM",&simhit_chargePerCM,"simhit_chargePerCM/F");
-
-  trackTree->Branch("simhit_pT",&simhit_pT,"simhit_pT/F");
-  trackTree->Branch("simhit_hightof_pT",&simhit_hightof_pT,"simhit_hightof_pT/F");
-  trackTree->Branch("simhit_lowtof_pT",&simhit_lowtof_pT,"simhit_lowtof_pT/F");
-  trackTree->Branch("simhit_hightof_detId",&simhit_hightof_detId,"simhit_hightof_detId/I");
-  trackTree->Branch("simhit_lowtof_detId",&simhit_lowtof_detId,"simhit_lowtof_detId/I");
-  trackTree->Branch("simhit_firstStrip",&simhit_firstStrip,"simhit_firstStrip/I");
-  trackTree->Branch("simhit_endStrip",&simhit_endStrip,"simhit_endStrip/I");
-  trackTree->Branch("simhit_barycenter",&simhit_barycenter,"simhit_barycenter/F");
   
+  //sim cluster High Tof
+  simTreeHiTof->Branch("simhit_hightof_charge",&simhit_hightof_charge,"simhit_hightof_charge/I");
+  simTreeHiTof->Branch("simhit_hightof_pT",&simhit_hightof_pT,"simhit_hightof_pT/F");
+  simTreeHiTof->Branch("simhit_hightof_detId",&simhit_hightof_detId,"simhit_hightof_detId/I");
+  simTreeHiTof->Branch("simhit_hightof_chargePerCM",&simhit_hightof_chargePerCM,"simhit_hightof_chargePerCM/F");
+  //sim cluster Low Tof
+  simTreeLoTof->Branch("simhit_lowtof_charge",&simhit_lowtof_charge,"simhit_lowtof_charge/I");
+  simTreeLoTof->Branch("simhit_lowtof_pT",&simhit_lowtof_pT,"simhit_lowtof_pT/F");
+  simTreeLoTof->Branch("simhit_lowtof_detId",&simhit_lowtof_detId,"simhit_lowtof_detId/I");
+  simTreeLoTof->Branch("simhit_lowtof_chargePerCM",&simhit_lowtof_chargePerCM,"simhit_lowtof_chargePerCM/F");
+
+  // trackTree->Branch("simhit_charge",&simhit_charge,"simhit_charge/I");
+  // trackTree->Branch("simhit_pT",&simhit_pT,"simhit_pT/F");
+  // trackTree->Branch("simhit_firstStrip",&simhit_firstStrip,"simhit_firstStrip/I");
+  // trackTree->Branch("simhit_endStrip",&simhit_endStrip,"simhit_endStrip/I");
+  // trackTree->Branch("simhit_barycenter",&simhit_barycenter,"simhit_barycenter/F");
   
+  simTreeLoTof->Branch("simhit_x",&simhit_x,"simhit_x/F");
+  simTreeLoTof->Branch("simhit_y",&simhit_y,"simhit_y/F");
+  simTreeLoTof->Branch("simhit_z",&simhit_z,"simhit_z/F");
+
+  simTreeLoTof->Branch("fromTrack",&fromTrack,"fromTrack/O");
 }
 
 TrackAnalyzer::~TrackAnalyzer() {
@@ -271,31 +289,37 @@ void TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
       return;
     }
   
+
+    fromTrack = false;
     for (const auto& simhit : *g4SimHits_htof){
       auto momentum = simhit.momentumAtEntry(); // momentumEntry is a LorentzVector
-
+      
       float pT = std::sqrt(momentum.x()*momentum.x() + momentum.y()*momentum.y()); 
       simhit_hightof_pT =  pT;
       simhit_hightof_detId = simhit.detUnitId();
       simhit_hightof_charge = calculateDepositedCharge(simhit);
-      simhit_charge = simhit_hightof_charge;
-      simhit_chargePerCM = simhit_hightof_charge*siStripClusterTools::sensorThicknessInverse(simhit_hightof_detId);
-
-      trackTree->Fill();
+      simhit_hightof_chargePerCM = simhit_hightof_charge*siStripClusterTools::sensorThicknessInverse(simhit_hightof_detId);
     }
+
+    fromTrack = false;
     for (const auto& simhit : *g4SimHits_ltof){
       auto momentum = simhit.momentumAtEntry(); // momentumEntry is a LorentzVector
-
+      
       float pT = std::sqrt(momentum.x()*momentum.x() + momentum.y()*momentum.y()); 
       simhit_lowtof_pT = pT;
       simhit_lowtof_detId = simhit.detUnitId();
       simhit_lowtof_charge = calculateDepositedCharge(simhit);
-      simhit_charge = simhit_lowtof_charge;
-      simhit_chargePerCM = simhit_lowtof_charge*siStripClusterTools::sensorThicknessInverse(simhit_lowtof_detId);
+      simhit_lowtof_chargePerCM = simhit_lowtof_charge*siStripClusterTools::sensorThicknessInverse(simhit_lowtof_detId);
 
-      trackTree->Fill();
+      simhit_x = simhit.localDirection().x();
+      simhit_y = simhit.localDirection().y();
+      simhit_z = simhit.localDirection().z();
+      if(simhit.trackId() > 0)
+    	fromTrack = true;
+      simTreeLoTof->Fill();
     }
-
+    
+    
   }
 
   // Retrieve the actual product from the handle
@@ -333,67 +357,66 @@ void TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
       int subDet = detid.subdetId();
       Point3DBase<float, GlobalTag> modulepos = trackerGeometry->idToDet(detid)->position();
      
-      bool hitInStrip = (subDet == SiStripDetId::TIB) || (subDet == SiStripDetId::TID) || (subDet == SiStripDetId::TOB) || (subDet == SiStripDetId::TEC);
-      //bool hitInStrip = (subDet == SiStripDetId::TOB) ;
-      if (!hitInStrip)continue;
+      bool hitInStrip = (isMC_)?(subDet == SiStripDetId::TOB): (subDet == SiStripDetId::TIB) || (subDet == SiStripDetId::TID) || (subDet == SiStripDetId::TOB) || (subDet == SiStripDetId::TEC);
+      if (hitInStrip){
 
-      clus_detId  = detid;
-      hit_eta = modulepos.eta();
-      hit_phi = modulepos.phi();
-      hit_pt = track.pt();
-      const std::type_info &type = typeid(*hit);
-      if (type == typeid(SiStripRecHit1D)){
+  	clus_detId  = detid;
+  	hit_eta = modulepos.eta();
+  	hit_phi = modulepos.phi();
+  	hit_pt = track.pt();
+  	const std::type_info &type = typeid(*hit);
+  	if (type == typeid(SiStripRecHit1D)){
 	  
-	const SiStripRecHit1D *striphit = dynamic_cast<const SiStripRecHit1D *>(hit);
-	if(striphit != nullptr){
-	  SiStripRecHit1D::ClusterRef stripclust(striphit->cluster());
-	  clus_chargePerCM = siStripClusterTools::chargePerCM(detid,(*stripclust));
-	  clus_charge = stripclust->charge();
-	  clus_width  = stripclust->size();
-	  clus_avgcharge = (clus_charge+clus_width/2)/clus_width;
-	  clus_barycenter = stripclust->barycenter();
-	  clus_firstStrip = stripclust->firstStrip();
-	  clus_endStrip  = stripclust->endStrip();
-	  trackTree->Fill();
+  	  const SiStripRecHit1D *striphit = dynamic_cast<const SiStripRecHit1D *>(hit);
+  	  if(striphit != nullptr){
+  	    SiStripRecHit1D::ClusterRef stripclust(striphit->cluster());
+  	    clus_chargePerCM = siStripClusterTools::chargePerCM(detid,(*stripclust));
+  	    clus_charge = stripclust->charge();
+  	    clus_width  = stripclust->size();
+  	    clus_avgcharge = (clus_charge+clus_width/2)/clus_width;
+  	    clus_barycenter = stripclust->barycenter();
+  	    clus_firstStrip = stripclust->firstStrip();
+  	    clus_endStrip  = stripclust->endStrip();
+  	    trackTree->Fill();
 	   
-	}
+  	  }
 	  
-      }
-      else if (type == typeid(SiStripRecHit2D)){
+  	}
+  	else if (type == typeid(SiStripRecHit2D)){
  	  
-	const SiStripRecHit2D *striphit2D = dynamic_cast<const SiStripRecHit2D *>(hit);
-	if(striphit2D != nullptr){    
+  	  const SiStripRecHit2D *striphit2D = dynamic_cast<const SiStripRecHit2D *>(hit);
+  	  if(striphit2D != nullptr){    
 
-	  SiStripRecHit2D::ClusterRef stripclust2D(striphit2D->cluster());
-	  clus_chargePerCM = siStripClusterTools::chargePerCM(detid,(*stripclust2D));
-	  clus_charge = stripclust2D->charge();   
-	  clus_width  = stripclust2D->size();
-	  clus_avgcharge = (clus_charge+clus_width/2)/clus_width;
-	  clus_barycenter = stripclust2D->barycenter();
-	  clus_firstStrip = stripclust2D->firstStrip();
-	  clus_endStrip  = stripclust2D->endStrip();
-	  trackTree->Fill();
+  	    SiStripRecHit2D::ClusterRef stripclust2D(striphit2D->cluster());
+  	    clus_chargePerCM = siStripClusterTools::chargePerCM(detid,(*stripclust2D));
+  	    clus_charge = stripclust2D->charge();   
+  	    clus_width  = stripclust2D->size();
+  	    clus_avgcharge = (clus_charge+clus_width/2)/clus_width;
+  	    clus_barycenter = stripclust2D->barycenter();
+  	    clus_firstStrip = stripclust2D->firstStrip();
+  	    clus_endStrip  = stripclust2D->endStrip();
+  	    trackTree->Fill();
 	    
-	}
+  	  }
+  	}
       }
-
     }
     
   }
 
 
 
-  for (const auto& jet : jets) {
-    if (nJets >= nMax) {
-      continue;
-    }
-    jetPt[nJets] = jet.pt();
-    jetEta[nJets] = jet.eta();
-    jetPhi[nJets] = jet.phi();
-    jetMass[nJets] = jet.mass();
-    nJets++;
-  }
-  trackTree->Fill();
+  // for (const auto& jet : jets) {
+  //   if (nJets >= nMax) {
+  //     continue;
+  //   }
+  //   jetPt[nJets] = jet.pt();
+  //   jetEta[nJets] = jet.eta();
+  //   jetPhi[nJets] = jet.phi();
+  //   jetMass[nJets] = jet.mass();
+  //   nJets++;
+  // }
+  // trackTree->Fill();
 
   
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
