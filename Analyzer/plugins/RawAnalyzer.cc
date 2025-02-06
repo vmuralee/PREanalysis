@@ -42,7 +42,8 @@
 #include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/SiStripCluster/interface/SiStripClusterTools.h"
-
+#include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
 
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -106,7 +107,7 @@ private:
   uint16_t    size;
   int         charge;
   float       chargePerCM;
-
+  int         subdet;
   const static int nMax = 800000;
   float       hitX[nMax];
   float       hitY[nMax];
@@ -155,6 +156,7 @@ RawAnalyzer::RawAnalyzer(const edm::ParameterSet& iConfig){
   offlineClusterTree->Branch("size", &size, "size/s");
   offlineClusterTree->Branch("charge", &charge, "charge/I");
   offlineClusterTree->Branch("chargePerCM", &chargePerCM, "chargePerCM/F");
+  offlineClusterTree->Branch("subdet", &subdet, "subdet/I");
 
   offlineClusterTree->Branch("x", hitX, "x[size]/F");
   offlineClusterTree->Branch("y", hitY, "y[size]/F");
@@ -192,7 +194,19 @@ void RawAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     runN   = (int) iEvent.id().run();
     lumi   = (int) iEvent.id().luminosityBlock();
     detId = detSiStripClusters.detId();
-    if (detId < 460000000 && detId > 420000000){
+    DetId detector_id =  detSiStripClusters.detId();
+    int subDet = detector_id.subdetId();
+    if(subDet == SiStripDetId::TIB)
+	subdet = 1;
+      else if (subDet == SiStripDetId::TOB)
+	subdet = 2;
+      else if (subDet == SiStripDetId::TID)
+	subdet = 3;
+      else if (subDet == SiStripDetId::TEC)
+	subdet = 4;
+      else
+	subdet = 0;
+    //if (subDet == SiStripDetId::TOB){
       for (const auto& stripCluster : detSiStripClusters) {
       
 	firstStrip  = stripCluster.firstStrip();
@@ -220,7 +234,7 @@ void RawAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
       
       //}
-    }
+      //}
   }
   // for (const auto& track : iEvent.get(tracksToken_)) {
   //   // do something with track parameters, e.g, plot the charge.
