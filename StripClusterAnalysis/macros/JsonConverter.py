@@ -1,0 +1,20 @@
+import uproot
+import sys
+
+pathTofile = str(sys.argv[1])
+
+file = uproot.open(pathTofile)
+tree = file['clusterAnalyzer/clusterTree']
+
+branches = tree.arrays()
+
+print(branches[2].to_list())
+# strip_detId = []
+# coll_striphit_x = []
+# new_dict = dict()
+# for iter in range(len(branches.event)):
+#     list_dict = branches[iter].to_list()
+#     event_n = list_dict['event']
+#     new_dict['event'] = event_n
+#     new_dict['strip_detId'] = [].append(
+    

@@ -1,0 +1,349 @@
+// -*- C++ -*-
+//
+// Package:    PREanalysis/StripClusterAnalysis
+// Class:      StripClusterAnalysis
+//
+/**\class StripClusterAnalysis StripClusterAnalysis.cc PREanalysis/StripClusterAnalysis/plugins/StripClusterAnalysis.cc
+
+ Description: [one line class summary]
+
+ Implementation:
+     [Notes on implementation]
+*/
+//
+// Original Author:  Vinaya Krishnan Muraleedharan Nair Bindhu
+//         Created:  Mon, 16 Dec 2024 11:10:32 GMT
+//
+//
+
+// system include files
+#include <memory>
+
+// user include files
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "CommonTools/Utils/interface/TFileDirectory.h"
+
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/CommonTopologies/interface/StripTopology.h"
+#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+#include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
+
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/SiStripCluster/interface/SiStripCluster.h"
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
+#include "DataFormats/Common/interface/DetSet.h"
+#include "DataFormats/Common/interface/DetSetVector.h"
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+
+#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
+#include "SimDataFormats/Track/interface/SimTrack.h"
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+
+#include "TH1.h"
+
+//ROOT inclusion
+#include "TROOT.h"
+#include "TFile.h"
+#include "TNtuple.h"
+#include "TTree.h"
+#include "TMath.h"
+#include "TList.h"
+#include "TString.h"
+#include "TVector3.h"
+//
+// class declaration
+//
+
+// If the analyzer does not use TFileService, please remove
+// the template argument to the base class so the class inherits
+// from  edm::one::EDAnalyzer<>
+// This will improve performance in multithreaded jobs.
+
+
+
+class StripClusterAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources> {
+public:
+  explicit StripClusterAnalysis(const edm::ParameterSet&);
+  ~StripClusterAnalysis() override;
+
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+private:
+  void beginJob() override;
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  void endJob() override;
+  GlobalPoint HitPosition(const PSimHit& hit,const  TrackerGeometry* tkGeom);
+  // ----------member data ---------------------------
+  // sim hits collection
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTOBHighTofToken_;  // TOB
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTOBLowTofToken_;
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTIBHighTofToken_;  // TIB
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTIBLowTofToken_;
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTIDHighTofToken_;  // TID
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTIDLowTofToken_;
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTECHighTofToken_;  // TEC
+  edm::EDGetTokenT<std::vector<PSimHit>> g4SimHitsTECLowTofToken_;
+
+  //simTracks
+  edm::EDGetTokenT<std::vector<SimTrack>> g4SimHitsTrackToken_;  
+  //siStrip cluster
+  edm::EDGetTokenT<edmNew::DetSetVector<SiStripCluster>> clusterToken_;
+
+  // Event Setup Data
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> tkGeomToken_;
+  
+  TTree* clusterTree;
+  edm::Service<TFileService> fs;
+  
+  edm::EventNumber_t eventN;
+  int runN;
+  int lumi;
+
+  const static int nMax = 800000;
+  float hit_tob_lo_x[nMax],hit_tob_lo_y[nMax],hit_tob_lo_z[nMax];
+  float hit_tib_lo_x[nMax],hit_tib_lo_y[nMax],hit_tib_lo_z[nMax];
+  float hit_tid_lo_x[nMax],hit_tid_lo_y[nMax],hit_tid_lo_z[nMax];
+  float hit_tec_lo_x[nMax],hit_tec_lo_y[nMax],hit_tec_lo_z[nMax];
+  float striphit_x,striphit_y,striphit_z;
+  int min_tothits;
+  float nhitpTrack;
+  float simtrk_pt;
+#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
+  edm::ESGetToken<SetupData, SetupRecord> setupToken_;
+#endif
+};
+
+StripClusterAnalysis::StripClusterAnalysis(const edm::ParameterSet& iConfig){
+  g4SimHitsTOBLowTofToken_  = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTOBLowTofTag"));
+  g4SimHitsTOBHighTofToken_ = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTOBHighTofTag"));
+  g4SimHitsTIBLowTofToken_  = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTIBLowTofTag"));
+  g4SimHitsTIBHighTofToken_ = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTIBHighTofTag"));
+  g4SimHitsTIDLowTofToken_  = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTIDLowTofTag"));
+  g4SimHitsTIDHighTofToken_ = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTIDHighTofTag"));
+  g4SimHitsTECLowTofToken_  = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTECLowTofTag"));
+  g4SimHitsTECHighTofToken_ = consumes<std::vector<PSimHit>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTECHighTofTag"));
+
+  g4SimHitsTrackToken_ = consumes<std::vector<SimTrack>>(iConfig.getParameter<edm::InputTag>("g4SimHitsTrackTag"));   
+
+  clusterToken_  = consumes<edmNew::DetSetVector<SiStripCluster>>(iConfig.getParameter<edm::InputTag>("siStripClustersTag"));
+  
+  tkGeomToken_ = esConsumes();
+  usesResource("TFileService");
+
+  clusterTree = fs->make<TTree>("clusterTree","clusterTree");
+  clusterTree->Branch("event", &eventN, "event/i");
+  clusterTree->Branch("run",   &runN, "run/I");
+  clusterTree->Branch("lumi",  &lumi, "lumi/I");
+
+  clusterTree->Branch("hit_tob_lo_x",hit_tob_lo_x,"hit_tob_lo_x/F");
+  clusterTree->Branch("hit_tob_lo_y",hit_tob_lo_y,"hit_tob_lo_y/F");
+  clusterTree->Branch("hit_tob_lo_z",hit_tob_lo_z,"hit_tob_lo_z/F");
+  
+  clusterTree->Branch("hit_tib_lo_x",hit_tib_lo_x,"hit_tib_lo_x/F");
+  clusterTree->Branch("hit_tib_lo_y",hit_tib_lo_y,"hit_tib_lo_y/F");
+  clusterTree->Branch("hit_tib_lo_z",hit_tib_lo_z,"hit_tib_lo_z/F");
+
+  clusterTree->Branch("hit_tid_lo_x",hit_tid_lo_x,"hit_tid_lo_x/F");
+  clusterTree->Branch("hit_tid_lo_y",hit_tid_lo_y,"hit_tid_lo_y/F");
+  clusterTree->Branch("hit_tid_lo_z",hit_tid_lo_z,"hit_tid_lo_z/F");
+
+  clusterTree->Branch("hit_tec_lo_x",hit_tec_lo_x,"hit_tec_lo_x/F");
+  clusterTree->Branch("hit_tec_lo_y",hit_tec_lo_y,"hit_tec_lo_y/F");
+  clusterTree->Branch("hit_tec_lo_z",hit_tec_lo_z,"hit_tec_lo_z/F");
+
+  clusterTree->Branch("min_tothits",&min_tothits,"min_tothits/I");
+  clusterTree->Branch("nhitpTrack",&nhitpTrack,"nhitpTrack/F");
+  clusterTree->Branch("simtrk_pt",&simtrk_pt,"simtrk_pt/F");
+  
+  clusterTree->Branch("striphit_x",&striphit_x,"striphit_x/F");
+  clusterTree->Branch("striphit_y",&striphit_y,"striphit_y/F");
+  clusterTree->Branch("striphit_z",&striphit_z,"striphit_z/F");
+
+}
+StripClusterAnalysis::~StripClusterAnalysis() {
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
+  //
+  // please remove this method altogether if it would be left empty
+}
+
+//
+// member functions
+//
+
+// ------------ method called for each event  ------------
+void StripClusterAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  using namespace edm;
+  
+  const auto& tkGeom = &iSetup.getData(tkGeomToken_);
+  const auto tkDets = tkGeom->dets();
+
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTOBHighTofToken = iEvent.getHandle(g4SimHitsTOBHighTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTOBLowTofToken = iEvent.getHandle(g4SimHitsTOBLowTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTIBHighTofToken = iEvent.getHandle(g4SimHitsTIBHighTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTIBLowTofToken = iEvent.getHandle(g4SimHitsTIBLowTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTIDHighTofToken = iEvent.getHandle(g4SimHitsTIDHighTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTIDLowTofToken = iEvent.getHandle(g4SimHitsTIDLowTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTECHighTofToken = iEvent.getHandle(g4SimHitsTECHighTofToken_);
+  edm::Handle<std::vector<PSimHit>> g4SimHitsTECLowTofToken = iEvent.getHandle(g4SimHitsTECLowTofToken_);
+
+  edm::Handle<std::vector<SimTrack>> g4SimHitsTrack = iEvent.getHandle(g4SimHitsTrackToken_);
+
+  edm::Handle<edmNew::DetSetVector<SiStripCluster>> clusterCollection = iEvent.getHandle(clusterToken_);
+
+  eventN = iEvent.id().event();
+  runN   = (int) event.id().run();
+  lumi  = (int) event.id().luminosityBlock();
+
+  if (!g4SimHitsTOBHighTofToken.isValid()){
+    edm::LogError("TrackAnalyzer") << "No valid g4SimHits collection found";
+    return;  
+  }
+  int nTrack = 0;
+  for(const auto& simtrack : *g4SimHitsTrack){
+    float px = simtrack.momentum().Px();
+    float py = simtrack.momentum().Py();
+    simtrk_pt = TMath::Sqrt(px*px + py*py);
+    ++nTrack;
+    
+    int nTOBhits=0, nTIBhits=0, nTIDhits=0, nTEChits=0;
+    for (const auto& simhit : *g4SimHitsTOBLowTofToken){
+      auto tob_hit_gp = HitPosition(simhit,tkGeom);
+      hit_tob_lo_x[nTOBhits] = tob_hit_gp.x();
+      hit_tob_lo_y[nTOBhits] = tob_hit_gp.y();
+      hit_tob_lo_z[nTOBhits] = tob_hit_gp.z();
+      ++nTOBhits;
+      //clusterTree->Fill();
+    }
+    for (const auto& simhit : *g4SimHitsTIBLowTofToken){
+      auto tib_hit_gp = HitPosition(simhit,tkGeom);
+      hit_tib_lo_x[nTIBhits] = tib_hit_gp.x();
+      hit_tib_lo_y[nTIBhits] = tib_hit_gp.y();
+      hit_tib_lo_z[nTIBhits] = tib_hit_gp.z();
+      ++nTIBhits;
+      //clusterTree->Fill();
+    }
+    for (const auto& simhit : *g4SimHitsTIDLowTofToken){
+      auto tid_hit_gp = HitPosition(simhit,tkGeom);
+      hit_tid_lo_x[nTIDhits] = tid_hit_gp.x();
+      hit_tid_lo_y[nTIDhits] = tid_hit_gp.y();
+      hit_tid_lo_z[nTIDhits] = tid_hit_gp.z();
+      ++nTIDhits;
+      //clusterTree->Fill();
+    
+    }
+    for (const auto& simhit : *g4SimHitsTECLowTofToken){
+      auto tec_hit_gp = HitPosition(simhit,tkGeom);
+      hit_tec_lo_x[nTEChits] = tec_hit_gp.x();
+      hit_tec_lo_y[nTEChits] = tec_hit_gp.y();
+      hit_tec_lo_z[nTEChits] = tec_hit_gp.z();
+      ++nTEChits;
+      //clusterTree->Fill();
+    
+    }
+    int tothits = nTOBhits+nTIBhits+nTIDhits+nTEChits;
+    min_tothits = std::min(tothits,70);
+    //std::cout<<min_tothits<<std::endl;
+    if(nTrack > 0 && min_tothits > 0)
+      nhitpTrack = min_tothits/nTrack;
+    clusterTree->Fill();
+
+  }
+
+
+  for (const auto& detSiStripClusters : *clusterCollection) {
+    uint32_t detId = detSiStripClusters.detId();
+    uint16_t nStrips{0};
+    
+    for (const auto& stripCluster : detSiStripClusters) {
+       uint16_t firstStrip  = stripCluster.firstStrip();
+       uint16_t endStrip    = stripCluster.endStrip();
+       const auto& _detId = detId; // for the capture clause in the lambda function
+       auto det = std::find_if(tkDets.begin(), tkDets.end(), [_detId](auto& elem) -> bool {
+	   return (elem->geographicalId().rawId() == _detId);
+	 });
+       const StripTopology& p = dynamic_cast<const StripGeomDetUnit*>(*det)->specificTopology();
+       nStrips = p.nstrips() - 1;
+       uint16_t barycenter = SiStripCluster(stripCluster,nStrips).barycenter();
+       GlobalPoint gp = (tkGeom->idToDet(detId))->surface().toGlobal(p.localPosition((float) barycenter));
+       striphit_x = gp.x();
+       striphit_y = gp.y();
+       striphit_z = gp.z();
+								    
+      // for (int strip = firstStrip; strip < endStrip+1; ++strip)
+      // 	{
+      // 	  GlobalPoint gp = (tkGeom->idToDet(detId))->surface().toGlobal(p.localPosition((float) strip));
+      // 	  striphit_x[strip - firstStrip] = gp.x();
+      // 	  striphit_y[strip - firstStrip] = gp.y();
+      // 	  striphit_z[strip - firstStrip] = gp.z();
+      // 	}
+      clusterTree->Fill();
+    }
+  }
+#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
+  // if the SetupData is always needed
+  auto setup = iSetup.getData(setupToken_);
+  // if need the ESHandle to check if the SetupData was there or not
+  auto pSetup = iSetup.getHandle(setupToken_);
+#endif
+}
+
+// ------------ method called once each job just before starting event loop  ------------
+void StripClusterAnalysis::beginJob() {
+  // please remove this method if not needed
+}
+
+// ------------ method called once each job just after ending the event loop  ------------
+void StripClusterAnalysis::endJob() {
+  // please remove this method if not needed
+}
+
+// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+void StripClusterAnalysis::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  //The following says we do not know what parameters are allowed so do no validation
+  // Please change this to state exactly what you do use, even if it is no parameters
+  // edm::ParameterSetDescription desc;
+  // desc.setUnknown();
+  // descriptions.addDefault(desc);
+
+  //Specify that only 'tracks' is allowed
+  //To use, remove the default given above and uncomment below
+  //edm::ParameterSetDescription desc;
+  //desc.addUntracked<edm::InputTag>("tracks", edm::InputTag("ctfWithMaterialTracks"));
+  //descriptions.addWithDefaultLabel(desc);
+}
+
+GlobalPoint StripClusterAnalysis::HitPosition(const PSimHit& hit, const  TrackerGeometry* tkGeom){
+  // const auto tkDets = tkGeom->dets();
+  // auto lp = hit.localPosition();
+  // uint32_t detId = hit.detUnitId();
+  // const auto& _detId = detId;
+  // auto det = std::find_if(tkDets.begin(), tkDets.end(), [_detId](auto& elem) -> bool {
+  // 	  return (elem->geographicalId().rawId() == _detId);
+  // 	});
+  // const StripTopology& p = dynamic_cast<const StripGeomDetUnit*>(*det)->specificTopology();
+  // GlobalPoint gp = (tkGeom->idToDet(detId))->surface().toGlobal(p.localPosition(TMath::Sqrt(lp.x()*lp.x()+lp.y()*lp.y()+lp.z()*lp.z())));
+  // return gp;
+
+  GlobalPoint globalPosition;
+  const DetId detId = hit.detUnitId();
+  const auto* geomDet = tkGeom->idToDet(detId);
+  if (geomDet){
+    const auto localPosition = hit.localPosition();
+    globalPosition = geomDet->surface().toGlobal(localPosition);
+
+  }
+  return globalPosition;
+
+}
+//define this as a plug-in
+DEFINE_FWK_MODULE(StripClusterAnalysis);
